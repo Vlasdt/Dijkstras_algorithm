@@ -73,6 +73,7 @@ impl<const N: usize> Graph<N> {
     }
 
     // Алгоритм Дейкстры (оставлен для справки, но для критического пути не используется)
+
     fn dijkstra(&self, start: usize, end: usize) -> ([usize; N], i64) {
         let adj_list = self.adjacency_list();
         let mut D = [i64::MAX; N];
@@ -107,7 +108,6 @@ impl<const N: usize> Graph<N> {
             p = next_vertex;
         }
     }
-
     fn critical_path(&self) -> (i64, Vec<usize>) {
         let mut in_degree = vec![0; N];
         let mut out_degree = vec![0; N];
