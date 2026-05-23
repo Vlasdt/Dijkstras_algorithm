@@ -11,7 +11,7 @@ impl<const N: usize> Graph<N> {
         Graph { V, E: Vec::new() }
     }
 
-    // Список смежности для ориентированного графа (без обратных рёбер)
+    // Список смежности для ориентированного графа
     fn adjacency_list(&self) -> Vec<Vec<(usize, i64)>> {
         let mut adj = vec![vec![]; N];
         for &(u, v, w) in &self.E {
@@ -99,7 +99,7 @@ impl<const N: usize> Graph<N> {
                     next_vertex = Some(v);
                 }
             }
-            let next_vertex = next_vertex.expect("Нет достижимых вершин");
+            let next_vertex = next_vertex.expect("");
             X[next_vertex] = true;
             if next_vertex == end {
                 return (H, D[end]);
@@ -108,26 +108,17 @@ impl<const N: usize> Graph<N> {
         }
     }
 
-    // Поиск критического пути (самый длинный путь от источника до стока)
     fn critical_path(&self) -> (i64, Vec<usize>) {
-        const INF_NEG: i64 = -10_000_000_000;
-
-        // 1. Найти источник s (полустепень захода = 0) и сток t (полустепень исхода = 0)
         let mut in_degree = vec![0; N];
         let mut out_degree = vec![0; N];
         for &(u, v, _) in &self.E {
             out_degree[u] += 1;
             in_degree[v] += 1;
         }
-        let s = (0..N)
-            .find(|&i| in_degree[i] == 0)
-            .expect("Нет источника (вершины с in-degree = 0)");
-        let t = (0..N)
-            .find(|&i| out_degree[i] == 0)
-            .expect("Нет стока (вершины с out-degree = 0)");
+        let s = (0..N).find(|&i| in_degree[i] == 0).expect("1");
+        let t = (0..N).find(|&i| out_degree[i] == 0).expect("2");
 
-        // 2. Инициализация матриц расстояний и следующей вершины
-        let mut dist = [[INF_NEG; N]; N];
+        let mut dist = [[i64::MIN; N]; N];
         let mut next = [[None; N]; N];
         for i in 0..N {
             dist[i][i] = 0;
@@ -135,7 +126,6 @@ impl<const N: usize> Graph<N> {
         }
         for &(u, v, w) in &self.E {
             if w > dist[u][v] {
-                // если несколько дуг – берём максимум
                 dist[u][v] = w;
                 next[u][v] = Some(v);
             }
@@ -143,11 +133,11 @@ impl<const N: usize> Graph<N> {
 
         for k in 0..N {
             for i in 0..N {
-                if dist[i][k] == INF_NEG {
+                if dist[i][k] == i64::MIN {
                     continue;
                 }
                 for j in 0..N {
-                    if dist[k][j] == INF_NEG {
+                    if dist[k][j] == i64::MIN {
                         continue;
                     }
                     let new_dist = dist[i][k] + dist[k][j];
@@ -160,19 +150,15 @@ impl<const N: usize> Graph<N> {
         }
 
         let length = dist[s][t];
-        if length == INF_NEG {
-            panic!(
-                "Путь от источника {} до стока {} не существует",
-                s + 1,
-                t + 1
-            );
+        if length == i64::MIN {
+            panic!("Пут {}  {} не существует", s + 1, t + 1);
         }
 
         let mut path = Vec::new();
         let mut cur = s;
         while cur != t {
             path.push(cur);
-            cur = next[cur][t].expect("Ошибка восстановления пути");
+            cur = next[cur][t].expect("3");
         }
         path.push(t);
 
@@ -209,14 +195,11 @@ fn main() {
     graph.E.push((11, 12, 14)); // 12 -> 13
     graph.E.push((12, 13, 7)); // 13 -> 14
 
-    // Опционально: нарисовать граф (если установлен plotters)
-    // graph.draw_graph("graph.png").unwrap();
+    graph.draw_graph("graph.png").unwrap();
 
     let (length, path) = graph.critical_path();
-    // Переводим номера вершин из 0-индексации в 1-индексацию для вывода
     let path_1based: Vec<usize> = path.iter().map(|&v| v + 1).collect();
 
-    println!("Критический путь (самый длинный) от источника до стока:");
     println!("Длина: {} дней", length);
     println!("Путь: {:?}", path_1based);
 }
